@@ -1,0 +1,17 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "TaiLOR",
+			// "url": "https://bananarepublic.gap.com/browse/category.do?cid=1016720&nav=meganav%3AMen%3AMen%27s%20Clothing%3ACoats%20%26%20Jackets%20",
+			"url": "http://localhost:8000/test-gallery.html",
+			"webRoot": "${workspaceFolder}",
+			"runtimeArgs": ["--load-extension=${workspaceFolder}"]
+		}
+	]
+}
