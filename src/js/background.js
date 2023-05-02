@@ -3,6 +3,10 @@ chrome.runtime.onInstalled.addListener(function () {
 		id: "tailorContextMenu",
 		title: "TaiLOR",
 		contexts: ["all"],
+		// icons: {
+		// 	16: "../../assets/favicon-16x16.png",
+		// 	32: "../../assets/favicon-32x32.png",
+		// }
 	});
 });
 

@@ -2,13 +2,13 @@
 const globalCssLink = document.createElement("link");
 globalCssLink.rel = "stylesheet";
 globalCssLink.type = "text/css";
-globalCssLink.href = "http://localhost:8001/src/css/global.css";
+globalCssLink.href = "http://localhost:8000/src/css/global.css";
 document.head.appendChild(globalCssLink);
 
 const modalCssLink = document.createElement("link");
 modalCssLink.rel = "stylesheet";
 modalCssLink.type = "text/css";
-modalCssLink.href = "http://localhost:8001/src/css/modal.css";
+modalCssLink.href = "http://localhost:8000/src/css/modal.css";
 document.head.appendChild(modalCssLink);
 
 //Img2Txt API
