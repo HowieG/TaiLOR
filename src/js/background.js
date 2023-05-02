@@ -1,7 +1,7 @@
 chrome.runtime.onInstalled.addListener(function () {
 	chrome.contextMenus.create({
 		id: "tailorContextMenu",
-		title: "Open Modal View",
+		title: "TaiLOR",
 		contexts: ["all"],
 	});
 });
