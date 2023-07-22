@@ -14,17 +14,7 @@ document.head.appendChild(modalCssLink);
 //Img2Txt API
 //const apiUrl = "https://api.replicate.com/v1/predictions";
 
-function displayTailorModalView() {
-	var modal = document.querySelector(".tailor-modal");
-
-	if (modal) {
-		modal.style.display = "block";
-	} else {
-		createModalView();
-	}
-}
-
-function createModalView() {
+function createModalView(imageUrl, distilledDescriptionArray) {
 	const modal = document.createElement("div");
 	modal.classList.add("tailor-modal");
 	const modalContent = document.createElement("div");
@@ -40,7 +30,7 @@ function createModalView() {
 	sourceImageContainer.id = "source-image-container";
 	const sourceImg = document.createElement("img");
 	sourceImg.id = "source-img";
-	sourceImg.src = "http://localhost:8000/assets/source-couch1.webp";
+	sourceImg.src = imageUrl;
 	sourceImageContainer.appendChild(sourceImg);
 	modalContent.appendChild(sourceImageContainer);
 
@@ -82,9 +72,9 @@ function createModalView() {
 	tailorButton.textContent = "tailor";
 	tailorSelectionContainer.appendChild(tailorButton);
 
-	// When the user clicks the close button, close the modal
+	// When the user clicks the close button, delete the modal
 	modalClose.addEventListener("click", function () {
-		modal.style.display = "none";
+		modal.remove();
 	});
 
 	// When the user clicks anywhere outside of the modal, close it
@@ -98,35 +88,11 @@ function createModalView() {
 	modal.appendChild(modalContent);
 	document.body.appendChild(modal);
 
-	// Define stop words
-	const stopWords = [
-		"a",
-		"an",
-		"and",
-		"the",
-		"in",
-		"on",
-		"at",
-		"to",
-		"for",
-		"with",
-		"of",
-		"from",
-		"is",
-	];
-
-	const hardCodedImageDescription =
-		"elongated couch sinuous lines ivory extruded design striped soft rounded forms modest simple design plush";
-
-	const strippedDescriptionTokens = hardCodedImageDescription
-		.toLowerCase()
-		.match(/\b\w+\b/g)
-		.filter((token) => !stopWords.includes(token));
-
 	buttonContainer.innerHTML = "";
-	strippedDescriptionTokens.forEach((token) => {
+	distilledDescriptionArray.forEach((token) => {
 		const button = document.createElement("button");
 		button.textContent = token;
+		button.style.fontSize = "10px";
 		button.classList.add("btn");
 		button.addEventListener("click", () => {
 			button.classList.remove("dislike");
@@ -140,53 +106,95 @@ function createModalView() {
 	});
 }
 
-// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-// TODO. DO NOT REMOVE OR MODAL WILL NEVER OPEN
-chrome.runtime.onMessage.addListener(function (request) {
+chrome.runtime.onMessage.addListener(async function (request) {
 	if (request.action === "openModalView") {
-		displayTailorModalView();
-		//callImg2Txt();
+		const descriptionArray = await callImg2Txt();
+		let distilledDescriptionArray = await distillDescription(
+			descriptionArray
+		);
+		createModalView(request.imageUrl, distilledDescriptionArray);
 	}
 });
 
-// function callImg2Txt() {
-// 	//const apiToken = "YOUR_API_TOKEN"; // TODO
-// 	var imageData;
-// 	var apiResponse;
+const TheNextLegToken = "";
 
-// 	fetch(
-// 		"https://img1.homary.com/fit-in/800x800/filters:format(webp)/mall/file/2022/07/07/e1f987478b210465f87bba2c2270daa7.jpg"
-// 	)
-// 		.then((response) => {
-// 			return response.blob();
-// 		})
-// 		.then((blob) => {
-// 			const reader = new FileReader();
-// 			reader.readAsDataURL(blob);
-// 			reader.onloadend = () => {
-// 				imageData = reader.result;
-// 			};
-// 		})
-// 		.catch((error) => console.error(error));
+async function callImg2Txt() {
+	const url = "https://api.thenextleg.io/v2/describe";
+	const body = {
+		url: "https://i.pinimg.com/474x/f2/e1/ef/f2e1efc7281f9ffc21f6897e844a0e52.jpg",
+	};
 
-// 	const requestBody = {
-// 		version:
-// 			"a4a8bafd6089e1716b06057c42b19378250d008b80fe87caa5cd36d40c1eda90",
-// 		input: { imageData },
-// 	};
+	try {
+		const response = await fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${TheNextLegToken}`,
+			},
+			body: JSON.stringify(body),
+		});
 
-// 	fetch(apiUrl, {
-// 		method: "POST",
-// 		mode: "cors",
-// 		headers: {
-// 			Authorization: "Token ed12da59f40e81d9467aef35ab3fa6b3f273a12e",
-// 			"Content-Type": "application/json",
-// 		},
-// 		body: JSON.stringify(requestBody),
-// 	})
-// 		.then((response) => (apiResponse = response.json()))
-// 		.then((data) => console.log(data))
-// 		.catch((error) => console.error(error));
+		const data = await response.json();
+		const messageId = data.messageId;
+		return await getMessage(messageId);
+	} catch (error) {
+		console.error("Error:", error);
+	}
+}
 
-// 	console.log(apiResponse);
-// }
+async function getMessage(messageId) {
+	const url = `https://api.thenextleg.io/v2/message/${messageId}`;
+
+	try {
+		let data;
+		do {
+			const response = await fetch(url, {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${TheNextLegToken}`,
+				},
+			});
+
+			data = await response.json();
+			if (data.progress !== 100) {
+				await new Promise((r) => setTimeout(r, 100));
+			}
+		} while (data.progress !== 100); // temporary hack until I set up a webhook
+
+		return data.response.content;
+	} catch (error) {
+		console.error("Error:", error);
+	}
+}
+
+async function distillDescription(descriptionArray) {
+	const baseUrl = "https://api.openai.com/v1";
+	const OpenAIToken = "";
+	const superDescription = descriptionArray.join(" ");
+	const prompt =
+		"I am writing a bulleted product description of the product described above. distill the description into the essential/unique words or phrases that describe its visual form, style, materials, design. separate every word or phrase by comma. no names of people";
+
+	const response = await fetch(`${baseUrl}/completions`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${OpenAIToken}`,
+		},
+		body: JSON.stringify({
+			model: "text-davinci-003",
+			prompt: `${superDescription} ${prompt}`,
+			max_tokens: 250,
+			temperature: 0.7,
+		}),
+	});
+
+	const data = await response.json();
+	const rawDescription = data.choices[0].text;
+	const distilledDescriptionArray = rawDescription
+		.replace(/\n/g, "")
+		.replace(/\.$/, "")
+		.split(", ");
+
+	return distilledDescriptionArray;
+}
