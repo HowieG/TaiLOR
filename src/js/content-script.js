@@ -108,7 +108,7 @@ function createModalView(imageUrl, distilledDescriptionArray) {
 
 chrome.runtime.onMessage.addListener(async function (request) {
 	if (request.action === "openModalView") {
-		const descriptionArray = await callImg2Txt();
+		const descriptionArray = await callImg2Txt(request.imageUrl);
 		let distilledDescriptionArray = await distillDescription(
 			descriptionArray
 		);
@@ -118,10 +118,10 @@ chrome.runtime.onMessage.addListener(async function (request) {
 
 const TheNextLegToken = "";
 
-async function callImg2Txt() {
+async function callImg2Txt(imageUrl) {
 	const url = "https://api.thenextleg.io/v2/describe";
 	const body = {
-		url: "https://i.pinimg.com/474x/f2/e1/ef/f2e1efc7281f9ffc21f6897e844a0e52.jpg",
+		url: imageUrl,
 	};
 
 	try {
